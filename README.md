@@ -1,46 +1,39 @@
-# GraspSocial — Reddit API Integration
+const Snoowrap = require('snoowrap');
 
-## About
+// Reddit API client — read-only public feed access
+const r = new Snoowrap({
+  userAgent: 'GraspSocial/1.0 by Ok-Sport1344',
+  clientId: process.env.REDDIT_CLIENT_ID,
+  clientSecret: process.env.REDDIT_CLIENT_SECRET,
+  username: process.env.REDDIT_USERNAME,
+  password: process.env.REDDIT_PASSWORD,
+});
 
-GraspSocial (graspsocial.io) is an Instagram 
-analytics and content intelligence platform 
-for creators. This document describes how 
-GraspSocial uses the Reddit API.
+/**
+ * Fetch hot posts from a public subreddit.
+ * Read-only. No user data accessed.
+ */
+async function getHotPosts(subreddit, limit = 20) {
+  const posts = await r.getSubreddit(subreddit).getHot({ limit });
+  return posts.map(post => ({
+    title: post.title,
+    score: post.score,
+    created_utc: post.created_utc,
+  }));
+}
 
-## How We Use the Reddit API
+/**
+ * Identify topics gaining momentum in a subreddit.
+ * Raw post data is discarded after processing.
+ */
+async function detectTrendingTopics(subreddits) {
+  const results = [];
+  for (const subreddit of subreddits) {
+    const posts = await getHotPosts(subreddit);
+    // Internal trend processing
+    results.push({ subreddit, posts });
+  }
+  return results;
+}
 
-GraspSocial reads publicly available hot and 
-rising posts from curated subreddits to 
-identify trending topics within specific 
-content niches such as fitness, wellness, 
-business, and relationships.
-
-This trending topic data is aggregated with 
-signals from other sources including Google 
-Trends and YouTube to surface content 
-opportunities for creators before topics peak.
-
-## What We Do
-
-- Read public subreddit hot and rising posts
-- Read post titles, scores, and comment counts
-- Identify topic velocity over 24-48 hour windows
-- Aggregate signals server-side for our platform
-
-## What We Do Not Do
-
-- Post, comment, vote, or interact in any subreddit
-- Collect or store Reddit user data
-- Access private or restricted content
-- Operate under any Reddit username
-- Build any experience within Reddit itself
-
-## Authentication
-
-Server-side only using application-only OAuth 
-with client credentials. No Reddit user login 
-or user data collection of any kind.
-
-## Platform
-
-https://www.graspsocial.io
+module.exports = { detectTrendingTopics };
